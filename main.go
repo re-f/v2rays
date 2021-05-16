@@ -12,21 +12,47 @@ import (
 
 	jsoniter "github.com/json-iterator/go"
 	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
 )
 
-func main() {
-	subscribeUrl := ""
-	vmessList, err := getVmssListUrlsFromUrl(subscribeUrl)
-	ExitIfError(err)
-	tplString, err := ioutil.ReadFile("config.json.tmpl")
-	ExitIfError(errors.Wrap(err, "Read template file get error: "))
-	tpl := template.Must(template.New("outbound").Funcs(template.FuncMap{"separator": separator}).Parse(string(tplString)))
-	confBytes := new(bytes.Buffer)
-	if err := tpl.Execute(confBytes, vmessList); err != nil {
-		ExitIfError(err)
-	}
+var (
+	subscribeUrl string
+	rootCmd      = &cobra.Command{
+		Use:   "v2rayS",
+		Short: "v2rayS",
+		Long:  `v2rayS`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			vmessList, err := getVmssListUrlsFromUrl(subscribeUrl)
+			if err != nil {
+				return err
+			}
 
-	ioutil.WriteFile("config.json", confBytes.Bytes(), 0755)
+			tplString, err := ioutil.ReadFile("config.json.tmpl")
+			if err != nil {
+				return errors.Wrap(err, "Read template file get error: ")
+			}
+
+			tpl := template.Must(template.New("outbound").Funcs(template.FuncMap{"separator": separator}).Parse(string(tplString)))
+			confBytes := new(bytes.Buffer)
+			if err := tpl.Execute(confBytes, vmessList); err != nil {
+				return err
+			}
+			ioutil.WriteFile("config.json", confBytes.Bytes(), 0755)
+			return nil
+		}}
+)
+
+func init() {
+	rootCmd.PersistentFlags().StringVarP(&subscribeUrl, "subscribeUrl", "s", "", "subscrib url (required)")
+
+	rootCmd.MarkPersistentFlagRequired("subscribeUrl")
+}
+
+func main() {
+	if err := rootCmd.Execute(); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
 }
 
 func parseVmessUrl(vmessUrl string) (VmessInfo, error) {
