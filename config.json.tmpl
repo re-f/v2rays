@@ -1,0 +1,161 @@
+{
+  "routing" : {
+    "rules" : [
+      {
+        "type" : "field",
+        "outboundTag" : "direct",
+        "domain" : [
+          "localhost",
+          "domain:me.com",
+          "domain:lookup-api.apple.com",
+          "domain:icloud-content.com",
+          "domain:icloud.com",
+          "domain:cdn-apple.com",
+          "domain:apple-cloudkit.com",
+          "domain:apple.com",
+          "domain:apple.co",
+          "domain:aaplimg.com",
+          "domain:guzzoni.apple.com",
+          "geosite:cn"
+        ]
+      },
+      {
+        "type" : "field",
+        "outboundTag" : "direct",
+        "ip" : [
+          "geoip:private",
+          "geoip:cn"
+        ]
+      },
+      {
+        "type" : "field",
+        "balancerTag" : "balance",
+        "port" : "0-65535"
+      }
+    ],
+    "name" : "bypasscn_private_apple",
+    "domainStrategy" : "IPIfNonMatch",
+    "balancers" : [
+      {
+        "tag" : "balance",
+        "selector" :[
+            {{$s := separator ","}}
+            {{range .}}
+             {{call $s}} "{{- .Ps}}"
+            {{end}}
+        ]
+      }
+    ]
+  },
+  "inbounds" : [
+    {
+      "listen" : "127.0.0.1",
+      "protocol" : "socks",
+      "settings" : {
+        "ip" : "127.0.0.1",
+        "auth" : "noauth",
+        "udp" : false
+      },
+      "tag" : "socksinbound",
+      "port" : 8888
+    },
+    {
+      "listen" : "127.0.0.1",
+      "protocol" : "http",
+      "settings" : {
+        "timeout" : 0
+      },
+      "tag" : "httpinbound",
+      "port" : 8889
+    }
+  ],
+  "dns" : {
+    "servers" : [
+      "114.114.114.114"
+    ]
+  },
+  "log" : {
+    "error" : "\/var\/folders\/yt\/lx1mppn579zf111g4fb9nmpw0000gn\/T\/cenmrev.v2rayx.log\/error.log",
+    "loglevel" : "error",
+    "access" : "\/var\/folders\/yt\/lx1mppn579zf111g4fb9nmpw0000gn\/T\/cenmrev.v2rayx.log\/access.log"
+  },
+  "outbounds" : [
+    {{$s := separator ", "}}{{range .}}{{call $s}}{
+        "sendThrough" : "0.0.0.0",
+        "mux" : {
+          "enabled" : false,
+          "concurrency" : 8
+        },
+        "protocol" : "vmess",
+        "settings" : {
+          "vnext" : [
+            {
+              "address" : "{{.Add}}",
+              "users" : [
+                {
+                  "id" : "3c91d857-2d40-39b9-81c0-f6adde8037ff",
+                  "alterId" : 2,
+                  "security" : "auto",
+                  "level" : 0
+                }
+              ],
+              "port" : {{.Port}}
+            }
+          ]
+        },
+        "tag" : "{{.Ps}}",
+        "streamSettings" : {
+          "wsSettings" : {
+            "path" : "\{{.Path}}",
+            "headers" : {
+              "Host" : "{{.Host}}"
+            }
+          },
+          "quicSettings" : {
+            "key" : "",
+            "header" : {
+              "type" : "none"
+            },
+            "security" : "none"
+          },
+          "tlsSettings" : {
+            "allowInsecure" : false,
+            "alpn" : [
+              "http\/1.1"
+            ],
+            "serverName" : "{{.Add}}",
+            "allowInsecureCiphers" : false
+          },
+          "sockopt" : {
+    
+          },
+          "httpSettings" : {
+            "path" : "",
+            "host" : [
+              ""
+            ]
+          },
+          "tcpSettings" : {
+            "header" : {
+              "type" : "none"
+            }
+          },
+          "kcpSettings" : {
+            "header" : {
+              "type" : "none"
+            },
+            "mtu" : 1350,
+            "congestion" : false,
+            "tti" : 20,
+            "uplinkCapacity" : 5,
+            "writeBufferSize" : 1,
+            "readBufferSize" : 1,
+            "downlinkCapacity" : 20
+          },
+          "security" : "tls",
+          "network" : "ws"
+        }
+      }
+      {{end}}
+  ]
+}

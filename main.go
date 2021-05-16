@@ -18,7 +18,9 @@ func main() {
 	subscribeUrl := ""
 	vmessList, err := getVmssListUrlsFromUrl(subscribeUrl)
 	ExitIfError(err)
-	tpl := template.Must(template.New("outbound").Funcs(template.FuncMap{"separator": separator}).Parse(tplString))
+	tplString, err := ioutil.ReadFile("config.json.tmpl")
+	ExitIfError(errors.Wrap(err, "Read template file get error: "))
+	tpl := template.Must(template.New("outbound").Funcs(template.FuncMap{"separator": separator}).Parse(string(tplString)))
 	confBytes := new(bytes.Buffer)
 	if err := tpl.Execute(confBytes, vmessList); err != nil {
 		ExitIfError(err)
@@ -85,83 +87,6 @@ func getVmssListUrlsFromUrl(subUrl string) (vmssList []VmessInfo, err error) {
 
 {{end}}
 */
-var tplString = `{{$s := separator ", "}}{{range .}}{{call $s}}{
-    "sendThrough" : "0.0.0.0",
-    "mux" : {
-      "enabled" : false,
-      "concurrency" : 8
-    },
-    "protocol" : "vmess",
-    "settings" : {
-      "vnext" : [
-        {
-          "address" : "{{.Add}}",
-          "users" : [
-            {
-              "id" : "3c91d857-2d40-39b9-81c0-f6adde8037ff",
-              "alterId" : 2,
-              "security" : "auto",
-              "level" : 0
-            }
-          ],
-          "port" : {{.Port}}
-        }
-      ]
-    },
-    "tag" : "{{.Ps}}",
-    "streamSettings" : {
-      "wsSettings" : {
-        "path" : "\{{.Path}}",
-        "headers" : {
-          "Host" : "{{.Host}}"
-        }
-      },
-      "quicSettings" : {
-        "key" : "",
-        "header" : {
-          "type" : "none"
-        },
-        "security" : "none"
-      },
-      "tlsSettings" : {
-        "allowInsecure" : false,
-        "alpn" : [
-          "http\/1.1"
-        ],
-        "serverName" : "{{.Add}}",
-        "allowInsecureCiphers" : false
-      },
-      "sockopt" : {
-
-      },
-      "httpSettings" : {
-        "path" : "",
-        "host" : [
-          ""
-        ]
-      },
-      "tcpSettings" : {
-        "header" : {
-          "type" : "none"
-        }
-      },
-      "kcpSettings" : {
-        "header" : {
-          "type" : "none"
-        },
-        "mtu" : 1350,
-        "congestion" : false,
-        "tti" : 20,
-        "uplinkCapacity" : 5,
-        "writeBufferSize" : 1,
-        "readBufferSize" : 1,
-        "downlinkCapacity" : 20
-      },
-      "security" : "tls",
-      "network" : "ws"
-    }
-  }
-  {{end}}`
 
 func separator(s string) func() string {
 	i := -1
