@@ -18,9 +18,7 @@ func main() {
 	subscribeUrl := ""
 	vmessList, err := getVmssListUrlsFromUrl(subscribeUrl)
 	ExitIfError(err)
-
-	tpl := template.New("outbound")
-	tpl = template.Must(tpl.Parse(tplString))
+	tpl := template.Must(template.New("outbound").Funcs(template.FuncMap{"separator": separator}).Parse(tplString))
 	confBytes := new(bytes.Buffer)
 	if err := tpl.Execute(confBytes, vmessList); err != nil {
 		ExitIfError(err)
@@ -80,7 +78,14 @@ func getVmssListUrlsFromUrl(subUrl string) (vmssList []VmessInfo, err error) {
 	return vmssList, nil
 }
 
-var tplString = `{{range .}}{
+/**
+{{$s := separator ", "}}
+{{range $key, $value := $}}
+{{call $s}}key:{{$key}} value:{{$value}}
+
+{{end}}
+*/
+var tplString = `{{$s := separator ", "}}{{range .}}{{call $s}}{
     "sendThrough" : "0.0.0.0",
     "mux" : {
       "enabled" : false,
@@ -157,3 +162,14 @@ var tplString = `{{range .}}{
     }
   }
   {{end}}`
+
+func separator(s string) func() string {
+	i := -1
+	return func() string {
+		i++
+		if i == 0 {
+			return ""
+		}
+		return s
+	}
+}
