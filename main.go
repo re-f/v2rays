@@ -20,10 +20,15 @@ import (
 var (
 	subscribeUrl string
 	rootCmd      = &cobra.Command{
-		Use:   "v2rayS",
-		Short: "v2rayS",
-		Long:  `v2rayS`,
+		Use:           "v2rayS",
+		Short:         "v2rayS",
+		Long:          `v2rayS`,
+		SilenceUsage:  true,
+		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if err := killV2ray(); err != nil {
+				return errors.Wrap(err, "kill v2ray process got error: ")
+			}
 			vmessList, err := getVmssListUrlsFromUrl(subscribeUrl)
 			if err != nil {
 				return err
@@ -46,7 +51,6 @@ var (
 
 func init() {
 	rootCmd.PersistentFlags().StringVarP(&subscribeUrl, "subscribeUrl", "s", "", "subscrib url (required)")
-
 	rootCmd.MarkPersistentFlagRequired("subscribeUrl")
 }
 
