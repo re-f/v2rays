@@ -12,6 +12,7 @@ import (
 	"strings"
 	"text/template"
 	"time"
+	"v2rayS/ticker"
 
 	jsoniter "github.com/json-iterator/go"
 	"github.com/pkg/errors"
@@ -44,40 +45,18 @@ var (
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		Run: func(cmd *cobra.Command, args []string) {
-			var nextRun = make(chan string)
-			var errInterval = 2 * time.Minute
-			var errTimer = time.NewTimer(errInterval)
 
-			var okInterval = 1 * time.Hour
-			var okTimer = time.NewTimer(okInterval)
+			ticker := ticker.NewTickerE(2*time.Second, 10*time.Second)
 
-			var endChan = time.Tick(2 * time.Minute)
-
-			var err error
-			go func() {
-				errTimer.Stop()
-				for {
-					select {
-					case <-okTimer.C:
-						nextRun <- fmt.Sprintf("update config succeed. next update will in %v", okInterval)
-						okTimer.Reset(okInterval)
-					case <-errTimer.C:
-						errTimer.Stop()
-						okTimer.Reset(okInterval)
-						nextRun <- fmt.Sprintf("update config go error : %v, will retry in %v", err.Error(), errInterval)
-					case <-endChan:
-						fmt.Println("received end signal, process stopped")
-						close(nextRun)
-					}
-				}
+			go func() { //fake kill signal
+				time.Sleep(30 * time.Second)
+				ticker.Stop("received kill signal")
 			}()
 
-			for msg := range nextRun {
-				fmt.Printf("====now: %v, msg: %v \n", time.Now(), msg)
-				if err = updateV2rayConifg(); err != nil {
-					errTimer.Reset(errInterval)
-				}
-			}
+			<-ticker.Run(func(msg string) error {
+				fmt.Println(msg)
+				return updateV2rayConifg()
+			})
 			fmt.Println("Stopped")
 		}}
 )
@@ -164,7 +143,7 @@ func killV2ray() error {
 	{ // find old v2ray pid
 		pgrepPath, err := exec.LookPath("pgrep")
 		if err != nil {
-			return errors.Wrap(err, "can't find pgrep in $PATH, got error :")
+			return errors.Wrap(err, "can't find pgrep in $PATH, got error:")
 		}
 
 		v2rayPidRaw := ""
