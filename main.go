@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"syscall"
@@ -23,8 +24,7 @@ import (
 )
 
 var (
-	subscribeUrl string
-	rootCmd      = &cobra.Command{
+	rootCmd = &cobra.Command{
 		Use:   "v2rayS",
 		Short: "v2rayS",
 		Long:  `v2rayS`,
@@ -59,7 +59,8 @@ var (
 			}()
 
 			pidfile.Write()
-			defer os.Remove("./v2ray.pid")
+
+			defer os.Remove(pidPath)
 
 			<-ticker.Run(func(msg string) error {
 				fmt.Println(msg)
@@ -68,13 +69,19 @@ var (
 			fmt.Println("Server stopped")
 		}}
 )
+var (
+	subscribeUrl string
+	pidPath      string
+)
 
 func init() {
 	serverCmd.PersistentFlags().StringVarP(&subscribeUrl, "subscribeUrl", "s", "", "subscrib url (required)")
 	serverCmd.MarkPersistentFlagRequired("subscribeUrl")
 	rootCmd.AddCommand(syncConfigCmd)
 	rootCmd.AddCommand(serverCmd)
-	pidfile.SetPidfilePath("./v2raS.pid")
+	pidDir, _ := os.Getwd()
+	pidPath = filepath.Join(pidDir, "v2raS.pid")
+	pidfile.SetPidfilePath(pidPath)
 
 }
 
