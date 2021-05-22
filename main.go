@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 	"text/template"
+	"time"
 
 	jsoniter "github.com/json-iterator/go"
 	"github.com/pkg/errors"
@@ -20,38 +21,73 @@ import (
 var (
 	subscribeUrl string
 	rootCmd      = &cobra.Command{
-		Use:           "v2rayS",
-		Short:         "v2rayS",
-		Long:          `v2rayS`,
+		Use:   "v2rayS",
+		Short: "v2rayS",
+		Long:  `v2rayS`,
+		// SilenceUsage:  true,
+		// SilenceErrors: true,
+	}
+	syncConfigCmd = &cobra.Command{
+		Use:           "update",
+		Short:         "update config from subscription",
+		Long:          `update config from subscription`,
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := killV2ray(); err != nil {
-				return errors.Wrap(err, "kill v2ray process got error: ")
-			}
-			vmessList, err := getVmssListUrlsFromUrl(subscribeUrl)
-			if err != nil {
-				return err
-			}
+			return updateV2rayConifg()
+		}}
 
-			tplString, err := ioutil.ReadFile("config.json.tmpl")
-			if err != nil {
-				return errors.Wrap(err, "Read template file get error: ")
-			}
+	serverCmd = &cobra.Command{
+		Use:           "server",
+		Short:         "v2ray update config server",
+		Long:          `v2ray update config server`,
+		SilenceUsage:  true,
+		SilenceErrors: true,
+		Run: func(cmd *cobra.Command, args []string) {
+			var nextRun = make(chan string)
+			var errInterval = 2 * time.Minute
+			var errTimer = time.NewTimer(errInterval)
 
-			tpl := template.Must(template.New("outbound").Funcs(template.FuncMap{"separator": separator}).Parse(string(tplString)))
-			confBytes := new(bytes.Buffer)
-			if err := tpl.Execute(confBytes, vmessList); err != nil {
-				return err
+			var okInterval = 1 * time.Hour
+			var okTimer = time.NewTimer(okInterval)
+
+			var endChan = time.Tick(2 * time.Minute)
+
+			var err error
+			go func() {
+				errTimer.Stop()
+				for {
+					select {
+					case <-okTimer.C:
+						nextRun <- fmt.Sprintf("update config succeed. next update will in %v", okInterval)
+						okTimer.Reset(okInterval)
+					case <-errTimer.C:
+						errTimer.Stop()
+						okTimer.Reset(okInterval)
+						nextRun <- fmt.Sprintf("update config go error : %v, will retry in %v", err.Error(), errInterval)
+					case <-endChan:
+						fmt.Println("received end signal, process stopped")
+						close(nextRun)
+					}
+				}
+			}()
+
+			for msg := range nextRun {
+				fmt.Printf("====now: %v, msg: %v \n", time.Now(), msg)
+				if err = updateV2rayConifg(); err != nil {
+					errTimer.Reset(errInterval)
+				}
 			}
-			ioutil.WriteFile("config.json", confBytes.Bytes(), 0755)
-			return nil
+			fmt.Println("Stopped")
 		}}
 )
 
 func init() {
-	rootCmd.PersistentFlags().StringVarP(&subscribeUrl, "subscribeUrl", "s", "", "subscrib url (required)")
-	rootCmd.MarkPersistentFlagRequired("subscribeUrl")
+	serverCmd.PersistentFlags().StringVarP(&subscribeUrl, "subscribeUrl", "s", "", "subscrib url (required)")
+	serverCmd.MarkPersistentFlagRequired("subscribeUrl")
+	rootCmd.AddCommand(syncConfigCmd)
+	rootCmd.AddCommand(serverCmd)
+
 }
 
 func main() {
@@ -112,14 +148,6 @@ func getVmssListUrlsFromUrl(subUrl string) (vmssList []VmessInfo, err error) {
 	return vmssList, nil
 }
 
-/**
-{{$s := separator ", "}}
-{{range $key, $value := $}}
-{{call $s}}key:{{$key}} value:{{$value}}
-
-{{end}}
-*/
-
 func separator(s string) func() string {
 	i := -1
 	return func() string {
@@ -169,4 +197,27 @@ func killV2ray() error {
 	}
 	// Kill the process
 	return proc.Kill()
+}
+
+func updateV2rayConifg() error {
+	if err := killV2ray(); err != nil {
+		return errors.Wrap(err, "kill v2ray process got error: ")
+	}
+	vmessList, err := getVmssListUrlsFromUrl(subscribeUrl)
+	if err != nil {
+		return err
+	}
+
+	tplString, err := ioutil.ReadFile("config.json.tmpl")
+	if err != nil {
+		return errors.Wrap(err, "Read template file get error: ")
+	}
+
+	tpl := template.Must(template.New("outbound").Funcs(template.FuncMap{"separator": separator}).Parse(string(tplString)))
+	confBytes := new(bytes.Buffer)
+	if err := tpl.Execute(confBytes, vmessList); err != nil {
+		return err
+	}
+	ioutil.WriteFile("config.json", confBytes.Bytes(), 0755)
+	return nil
 }
