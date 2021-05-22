@@ -125,7 +125,7 @@ func getVmssListUrlsFromUrl(subUrl string) (vmssList []VmessInfo, err error) {
 	for _, num := range vms {
 		vmObj, err := parseVmessUrl(num)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "%v\n", errors.Wrap(err, fmt.Sprint("Given vmess url: ", num)))
+			// fmt.Fprintf(os.Stderr, "%v\n", errors.Wrap(err, fmt.Sprint("Given vmess url: ", num)))
 			continue
 		}
 		vmssList = append(vmssList, vmObj)
@@ -155,19 +155,19 @@ func killV2ray() error {
 			return errors.Wrap(err, "can't find pgrep in $PATH, got error:")
 		}
 
-		v2rayPidRaw := ""
-		if out, err := exec.Command(pgrepPath, "v2ray$").Output(); err != nil {
-			return errors.Wrapf(err, "find old v2ray process got error, and output is %v", v2rayPidRaw)
-		} else {
-			v2rayPidRaw = strings.TrimSpace(string(out))
+		out, err := exec.Command(pgrepPath, "v2ray$").Output()
+		v2rayPidRaw := strings.TrimSpace(string(out))
+		if err != nil {
+			if strings.Contains(err.Error(), "exit status 1") { //
+				// according to `man pgrep`, the better solution is to judge if exit code is equal to 1, but it is too rough to write in golang, so i use a bad IF condition
+				fmt.Println("Warning: v2ray not runing, skip kill")
+				return nil
+			} else {
+				return errors.Wrapf(err, "find old v2ray process got error, and output is %v", v2rayPidRaw)
+			}
 		}
 
-		fmt.Printf("pgrep v2ray output: %v\n", v2rayPidRaw)
-
-		if pLen := len(strings.Split(v2rayPidRaw, "\n")); pLen == 0 {
-			fmt.Println("Warning: v2ray not runing before")
-			return nil
-		} else if pLen == 1 {
+		if pLen := len(strings.Split(v2rayPidRaw, "\n")); pLen == 1 {
 			pid, err := strconv.Atoi(v2rayPidRaw)
 			if err != nil {
 				return errors.Wrapf(err, "pgrep v2ray get non-numeric output: %v", v2rayPidRaw)
@@ -196,6 +196,9 @@ func updateV2rayConifg() error {
 		return err
 	}
 
+	if len(vmessList) == 0 {
+		return errors.Errorf("get empty vmess url from subscribe url")
+	}
 	tplString, err := ioutil.ReadFile("config.json.tmpl")
 	if err != nil {
 		return errors.Wrap(err, "Read template file get error: ")
@@ -207,5 +210,6 @@ func updateV2rayConifg() error {
 		return err
 	}
 	ioutil.WriteFile("config.json", confBytes.Bytes(), 0755)
+	fmt.Println("wrote down new config.json")
 	return nil
 }
