@@ -8,12 +8,15 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"os/signal"
 	"strconv"
 	"strings"
+	"syscall"
 	"text/template"
 	"time"
 	"v2rayS/ticker"
 
+	"github.com/facebookgo/pidfile"
 	jsoniter "github.com/json-iterator/go"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -46,18 +49,23 @@ var (
 		SilenceErrors: true,
 		Run: func(cmd *cobra.Command, args []string) {
 
-			ticker := ticker.NewTickerE(2*time.Second, 10*time.Second)
+			sigs := make(chan os.Signal, 1)
+			signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 
-			go func() { //fake kill signal
-				time.Sleep(30 * time.Second)
-				ticker.Stop("received kill signal")
+			ticker := ticker.NewTickerE(2*time.Second, 10*time.Second)
+			go func() {
+				sig := <-sigs
+				ticker.Stop(fmt.Sprintf("received kill signal(%v)", sig))
 			}()
+
+			pidfile.Write()
+			defer os.Remove("./v2ray.pid")
 
 			<-ticker.Run(func(msg string) error {
 				fmt.Println(msg)
 				return updateV2rayConifg()
 			})
-			fmt.Println("Stopped")
+			fmt.Println("Server stopped")
 		}}
 )
 
@@ -66,6 +74,7 @@ func init() {
 	serverCmd.MarkPersistentFlagRequired("subscribeUrl")
 	rootCmd.AddCommand(syncConfigCmd)
 	rootCmd.AddCommand(serverCmd)
+	pidfile.SetPidfilePath("./v2raS.pid")
 
 }
 

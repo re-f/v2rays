@@ -39,7 +39,6 @@ func NewTickerE(errInterval, okInterval time.Duration) *tickerE {
 				ticker.okTimer.Reset(okInterval)
 				ticker.nextRun <- fmt.Sprintf("update config go error : %v, will retry in %v", ticker.errorMsg, errInterval)
 			case <-ticker.endChan:
-				// fmt.Printf("received end signal(msg:%v), process stopped\n", msg)
 				close(ticker.nextRun)
 			}
 		}
@@ -53,7 +52,6 @@ func (t *tickerE) runnerError(err error) {
 }
 
 func (t *tickerE) Stop(msg string) {
-	fmt.Println("got stopped!!!")
 	t.endChan <- msg
 }
 
