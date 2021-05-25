@@ -1,0 +1,5 @@
+
+* Roadmap
+- [ x ] config.json.tmpl 路径可配
+- [ x ] config.json 路径可配
+- [  ] docker support
