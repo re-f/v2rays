@@ -49,7 +49,7 @@
   },
   "inbounds" : [
     {
-      "listen" : "127.0.0.1",
+      "listen" : "0.0.0.0",
       "protocol" : "socks",
       "settings" : {
         "ip" : "127.0.0.1",
@@ -60,7 +60,7 @@
       "port" : 8888
     },
     {
-      "listen" : "127.0.0.1",
+      "listen" : "0.0.0.0",
       "protocol" : "http",
       "settings" : {
         "timeout" : 0
@@ -75,9 +75,9 @@
     ]
   },
   "log" : {
-    "error" : "\/var\/folders\/yt\/lx1mppn579zf111g4fb9nmpw0000gn\/T\/cenmrev.v2rayx.log\/error.log",
+    "error" : "\/tmp\/error.log",
     "loglevel" : "error",
-    "access" : "\/var\/folders\/yt\/lx1mppn579zf111g4fb9nmpw0000gn\/T\/cenmrev.v2rayx.log\/access.log"
+    "access" : "\/tmp\/access.log"
   },
   "outbounds" : [
     {{$s := separator ", "}}{{range .}}{{call $s}}{

@@ -154,6 +154,20 @@ func separator(s string) func() string {
 	}
 }
 
+func runV2ray() error {
+	v2rayPath, err := exec.LookPath("v2ray")
+	if err != nil {
+		return errors.Wrap(err, "can't find v2ray in $PATH, you should install v2ray first")
+	}
+	cmd := exec.Command(v2rayPath, "-config", "/root/.config/v2ray/config.json")
+	cmd.Stdout = os.Stdout
+
+	if err := cmd.Start(); err != nil {
+		return errors.Wrap(err, "run v2ray failed, got error :")
+	}
+	return nil
+}
+
 func killV2ray() error {
 	oldV2rayPid := 0
 	{ // find old v2ray pid
@@ -190,8 +204,25 @@ func killV2ray() error {
 	if err != nil {
 		return errors.Wrap(err, "find v2ray(%v) got error: ")
 	}
+	if err := proc.Kill(); err != nil {
+		return errors.Wrap(err, "find v2ray(%v) got error: ")
+	}
+	pStat, err := proc.Wait()
 	// Kill the process
-	return proc.Kill()
+	waitKillTimeOut := time.NewTimer(10 * time.Second)
+	for {
+		if pStat != nil {
+			//map加锁、删除map中的key、解锁map
+			break
+		}
+		select {
+		case <-waitKillTimeOut.C:
+			return errors.Wrap(err, "find v2ray(%v) got error: ")
+		default:
+			time.Sleep(10 * time.Nanosecond)
+		}
+	}
+	return nil
 }
 
 func updateV2rayConifg() error {
@@ -206,7 +237,11 @@ func updateV2rayConifg() error {
 	if len(vmessList) == 0 {
 		return errors.Errorf("get empty vmess url from subscribe url")
 	}
-	tplString, err := ioutil.ReadFile("config.json.tmpl")
+	ex, err := os.Executable()
+	if err != nil {
+		return errors.Wrap(err, "get porcess current dir get error: ")
+	}
+	tplString, err := ioutil.ReadFile(filepath.Join(filepath.Dir(ex), "config.json.tmpl"))
 	if err != nil {
 		return errors.Wrap(err, "Read template file get error: ")
 	}
@@ -216,7 +251,8 @@ func updateV2rayConifg() error {
 	if err := tpl.Execute(confBytes, vmessList); err != nil {
 		return err
 	}
-	ioutil.WriteFile("config.json", confBytes.Bytes(), 0755)
-	fmt.Println("wrote down new config.json")
-	return nil
+	ioutil.WriteFile("/root/.config/v2ray/config.json", confBytes.Bytes(), 0755)
+	fmt.Println("wrote down new /root/.config/v2ray/config.json")
+
+	return runV2ray()
 }
