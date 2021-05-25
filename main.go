@@ -21,6 +21,7 @@ import (
 	jsoniter "github.com/json-iterator/go"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 var (
@@ -52,7 +53,7 @@ var (
 			sigs := make(chan os.Signal, 1)
 			signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 
-			ticker := ticker.NewTickerE(2*time.Second, 10*time.Second)
+			ticker := ticker.NewTickerE(2*time.Second, interval)
 			go func() {
 				sig := <-sigs
 				ticker.Stop(fmt.Sprintf("received kill signal(%v)", sig))
@@ -72,17 +73,34 @@ var (
 var (
 	subscribeUrl string
 	pidPath      string
+	interval     time.Duration
+	configPath   string
+	tmplPath     string
 )
 
 func init() {
-	serverCmd.PersistentFlags().StringVarP(&subscribeUrl, "subscribeUrl", "s", "", "subscrib url (required)")
+
+	ex, err := os.Executable()
+	if err != nil {
+		panic(fmt.Sprintf("find current execute file path got error: %v", err))
+	}
+
+	serverCmd.PersistentFlags().StringVarP(&subscribeUrl, "subscribeUrl", "s", "", "subscribe url (required)")
+
+	initUpdateFlagFn := func(flagSet *pflag.FlagSet) {
+		flagSet.DurationVarP(&interval, "interval", "i", 1*time.Hour, "update config interval")
+		flagSet.StringVarP(&configPath, "config", "c", "/root/.config/v2ray/config.json", "target v2ray config.json path")
+		flagSet.StringVarP(&tmplPath, "template", "t", filepath.Join(filepath.Dir(ex), "config.json.tmpl"), "config.json.tmpl file path")
+	}
+	initUpdateFlagFn(serverCmd.PersistentFlags())
+	initUpdateFlagFn(syncConfigCmd.PersistentFlags())
+
 	serverCmd.MarkPersistentFlagRequired("subscribeUrl")
 	rootCmd.AddCommand(syncConfigCmd)
 	rootCmd.AddCommand(serverCmd)
 	pidDir, _ := os.Getwd()
 	pidPath = filepath.Join(pidDir, "v2raS.pid")
 	pidfile.SetPidfilePath(pidPath)
-
 }
 
 func main() {
@@ -159,7 +177,7 @@ func runV2ray() error {
 	if err != nil {
 		return errors.Wrap(err, "can't find v2ray in $PATH, you should install v2ray first")
 	}
-	cmd := exec.Command(v2rayPath, "-config", "/root/.config/v2ray/config.json")
+	cmd := exec.Command(v2rayPath, "-config", configPath)
 	cmd.Stdout = os.Stdout
 
 	if err := cmd.Start(); err != nil {
@@ -237,11 +255,8 @@ func updateV2rayConifg() error {
 	if len(vmessList) == 0 {
 		return errors.Errorf("get empty vmess url from subscribe url")
 	}
-	ex, err := os.Executable()
-	if err != nil {
-		return errors.Wrap(err, "get porcess current dir get error: ")
-	}
-	tplString, err := ioutil.ReadFile(filepath.Join(filepath.Dir(ex), "config.json.tmpl"))
+
+	tplString, err := ioutil.ReadFile(tmplPath)
 	if err != nil {
 		return errors.Wrap(err, "Read template file get error: ")
 	}
@@ -251,8 +266,8 @@ func updateV2rayConifg() error {
 	if err := tpl.Execute(confBytes, vmessList); err != nil {
 		return err
 	}
-	ioutil.WriteFile("/root/.config/v2ray/config.json", confBytes.Bytes(), 0755)
-	fmt.Println("wrote down new /root/.config/v2ray/config.json")
+	ioutil.WriteFile(configPath, confBytes.Bytes(), 0755)
+	fmt.Println("wrote down new ", configPath)
 
 	return runV2ray()
 }
