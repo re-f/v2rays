@@ -1,5 +1,38 @@
+* 特性
+用于 cli 的 v2ray 客户端，也能使用订阅的配置
 
-* Roadmap
+* 使用方式
+*前置条件*
+1. 要求 v2ray 已经安装在 $PATH 路径下
+2. 订阅链接的放回值格式要求：每个 VmssUrls 必须做 base64.StdEncoding,每个 VmssUrls 之间以回车分割。
+
+** 非 容器环境 
+查看使用说明：
+#+begin_src bash
+root@ubuntu:/shared/codes/v2rayS# ./v2rayS --help
+v2rayS
+
+Usage:
+  v2rayS [command]
+
+Available Commands:
+  help        Help about any command
+  server      v2ray update config server
+  update      update config from subscription
+
+Flags:
+  -h, --help   help for v2rayS
+
+Use "v2rayS [command] --help" for more information about a command.
+#+end_src
+
+使用举例：
+./v2rayS server -s 'your subscription url'
+
+
+* TODO 
 - [x] config.json.tmpl 路径可配
 - [x] config.json 路径可配
 - [ ] docker support
+- [ ] 调整日志
+- release
