@@ -1,4 +1,4 @@
-package ticker
+package main
 
 import (
 	"fmt"

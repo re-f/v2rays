@@ -15,7 +15,6 @@ import (
 	"syscall"
 	"text/template"
 	"time"
-	"v2rayS/ticker"
 
 	"github.com/facebookgo/pidfile"
 	jsoniter "github.com/json-iterator/go"
@@ -29,8 +28,6 @@ var (
 		Use:   "v2rayS",
 		Short: "v2rayS",
 		Long:  `v2rayS`,
-		// SilenceUsage:  true,
-		// SilenceErrors: true,
 	}
 	syncConfigCmd = &cobra.Command{
 		Use:           "update",
@@ -53,7 +50,7 @@ var (
 			sigs := make(chan os.Signal, 1)
 			signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 
-			ticker := ticker.NewTickerE(2*time.Second, interval)
+			ticker := NewTickerE(2*time.Second, interval)
 			go func() {
 				sig := <-sigs
 				ticker.Stop(fmt.Sprintf("received kill signal(%v)", sig))
@@ -80,13 +77,17 @@ var (
 
 func init() {
 
+	pidDir, _ := os.Getwd()
+	pidPath = filepath.Join(pidDir, "v2raS.pid")
+	pidfile.SetPidfilePath(pidPath)
+
+	serverCmd.PersistentFlags().StringVarP(&subscribeUrl, "subscribeUrl", "s", "", "subscribe url (required)")
+	serverCmd.MarkPersistentFlagRequired("subscribeUrl")
+
 	ex, err := os.Executable()
 	if err != nil {
 		panic(fmt.Sprintf("find current execute file path got error: %v", err))
 	}
-
-	serverCmd.PersistentFlags().StringVarP(&subscribeUrl, "subscribeUrl", "s", "", "subscribe url (required)")
-
 	initUpdateFlagFn := func(flagSet *pflag.FlagSet) {
 		flagSet.DurationVarP(&interval, "interval", "i", 1*time.Hour, "update config interval")
 		flagSet.StringVarP(&configPath, "config", "c", "/root/.config/v2ray/config.json", "target v2ray config.json path")
@@ -95,12 +96,9 @@ func init() {
 	initUpdateFlagFn(serverCmd.PersistentFlags())
 	initUpdateFlagFn(syncConfigCmd.PersistentFlags())
 
-	serverCmd.MarkPersistentFlagRequired("subscribeUrl")
 	rootCmd.AddCommand(syncConfigCmd)
 	rootCmd.AddCommand(serverCmd)
-	pidDir, _ := os.Getwd()
-	pidPath = filepath.Join(pidDir, "v2raS.pid")
-	pidfile.SetPidfilePath(pidPath)
+
 }
 
 func main() {

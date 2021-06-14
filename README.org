@@ -38,4 +38,4 @@ Use "v2rayS [command] --help" for more information about a command.
     - 编译
     - Docker hub 账号
 - [ ] 调整日志
-- release
+- [ ] release
