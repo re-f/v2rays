@@ -1,0 +1,22 @@
+version: '3'
+services:
+  v2ray:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - TAG=v4.38.3
+        - TARGETPLATFORM=linux/amd64
+    image: ref.v2fly
+    container_name: s.v2ray
+    hostname: s.v2ray
+    command: "${your v2ray subscription url}"
+    ports:
+      # socks
+      - "8888:8888"
+      # http
+      - "8889:8889"
+    volumes:
+      - /shared:/shared
+      - /root/.config:/root/.config
+

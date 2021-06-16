@@ -1,5 +1,5 @@
 * 特性
-使 cli 的 v2ray 客户端，也能使用订阅的配置
+使 cli 的 v2ray 客户端，也能使用订阅的配置，同时用户拥有最大v2ray配置自定义能力
 
 * 使用方式
 *前置条件*
@@ -26,15 +26,24 @@ Flags:
 Use "v2rayS [command] --help" for more information about a command.
 #+end_src
 
+** 容器环境
+1. cd docker
+2. 修改 docker-compose.yaml 文件， 将 ${your v2ray subscription url} 替换成自己的v2ray配置订阅地址
+3. 执行 docker-compoose up -d
+
+
+
 使用举例：
 ./v2rayS server -s 'your subscription url'
 
+* 说明
+v2ray.sh 引用自 [[https://github.com/v2fly/docker][v2fly]
 
 * TODO 
 - [x] config.json.tmpl 路径可配
 - [x] config.json 路径可配
-- [ ] docker support
-    - [ ] v2fly-core
+- [x] docker support
+    - [x] v2fly-core
     - 编译
     - Docker hub 账号
 - [ ] 调整日志
