@@ -20,7 +20,6 @@ import (
 	jsoniter "github.com/json-iterator/go"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
 )
 
 var (
@@ -81,20 +80,20 @@ func init() {
 	pidPath = filepath.Join(pidDir, "v2raS.pid")
 	pidfile.SetPidfilePath(pidPath)
 
-	serverCmd.PersistentFlags().StringVarP(&subscribeUrl, "subscribeUrl", "s", "", "subscribe url (required)")
-	serverCmd.MarkPersistentFlagRequired("subscribeUrl")
+	serverCmd.PersistentFlags().DurationVarP(&interval, "interval", "i", 1*time.Hour, "update config interval")
 
 	ex, err := os.Executable()
 	if err != nil {
 		panic(fmt.Sprintf("find current execute file path got error: %v", err))
 	}
-	initUpdateFlagFn := func(flagSet *pflag.FlagSet) {
-		flagSet.DurationVarP(&interval, "interval", "i", 1*time.Hour, "update config interval")
-		flagSet.StringVarP(&configPath, "config", "c", "/root/.config/v2ray/config.json", "target v2ray config.json path")
-		flagSet.StringVarP(&tmplPath, "template", "t", filepath.Join(filepath.Dir(ex), "config.json.tmpl"), "config.json.tmpl file path")
+	initUpdateFlagFn := func(cmd *cobra.Command) {
+		cmd.Flags().StringVarP(&subscribeUrl, "subscribeUrl", "s", "", "subscribe url (required)")
+		cmd.Flags().StringVarP(&configPath, "config", "c", "/root/.config/v2ray/config.json", "target v2ray config.json path")
+		cmd.Flags().StringVarP(&tmplPath, "template", "t", filepath.Join(filepath.Dir(ex), "config.json.tmpl"), "config.json.tmpl file path")
+		cmd.MarkFlagRequired("subscribeUrl")
 	}
-	initUpdateFlagFn(serverCmd.PersistentFlags())
-	initUpdateFlagFn(syncConfigCmd.PersistentFlags())
+	initUpdateFlagFn(serverCmd)
+	initUpdateFlagFn(syncConfigCmd)
 
 	rootCmd.AddCommand(syncConfigCmd)
 	rootCmd.AddCommand(serverCmd)
