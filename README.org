@@ -28,8 +28,7 @@ Use "v2rayS [command] --help" for more information about a command.
 
 ** 容器环境
 1. cd docker
-2. 修改 docker-compose.yaml 文件， 将 ${your v2ray subscription url} 替换成自己的v2ray配置订阅地址
-3. 执行 docker-compoose up -d
+2. V2RAY_SUBSCR_URL="${你的v2ray 订阅地址}" docker-compose up -d
 
 
 

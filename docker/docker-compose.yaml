@@ -10,7 +10,7 @@ services:
     image: ref.v2fly
     container_name: s.v2ray
     hostname: s.v2ray
-    command: "${your v2ray subscription url}"
+    command: "${V2RAY_SUBSCR_URL}"
     ports:
       # socks
       - "8888:8888"
