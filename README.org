@@ -4,7 +4,7 @@
 * 使用方式
 *前置条件*
 1. 要求 v2ray 已经安装在 $PATH 路径下
-2. 订阅链接的放回值格式要求：每个 VmssUrls 必须做 base64.StdEncoding,每个 VmssUrls 之间以回车分割。
+2. 订阅链接的返回值格式要求：每个 VmssUrls 必须做 base64.StdEncoding,每个 VmssUrls 之间以回车分割。
 
 ** 非 容器环境 
 查看使用说明：
