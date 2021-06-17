@@ -36,7 +36,7 @@ Use "v2rayS [command] --help" for more information about a command.
 ./v2rayS server -s 'your subscription url'
 
 * 说明
-v2ray.sh 引用自 [[https://github.com/v2fly/docker][v2fly]
+v2ray.sh 引用自 [[https://github.com/v2fly/docker][v2fly]]
 
 * TODO 
 - [x] config.json.tmpl 路径可配
