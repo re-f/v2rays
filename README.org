@@ -26,14 +26,12 @@ Flags:
 Use "v2rayS [command] --help" for more information about a command.
 #+end_src
 
+使用举例：
+./v2rayS server -s 'your subscription url'
+
 ** 容器环境
 1. cd docker
 2. V2RAY_SUBSCR_URL="${你的v2ray 订阅地址}" docker-compose up -d
-
-
-
-使用举例：
-./v2rayS server -s 'your subscription url'
 
 * 说明
 v2ray.sh 引用自 [[https://github.com/v2fly/docker][v2fly]]
