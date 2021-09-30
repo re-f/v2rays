@@ -5,7 +5,7 @@ LABEL maintainer "V2Fly Community <dev@v2fly.org>"
 WORKDIR /etc
 RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.tuna.tsinghua.edu.cn/g' /etc/apk/repositories
 RUN apk add git
-RUN git clone https://gitee.com/erica_z/v2rays.git /etc/v2rays
+RUN git clone https://gitee.com/re-f/v2rays.git /etc/v2rays
 WORKDIR /etc/v2rays/
 ENV GOPROXY="goproxy.cn,goproxy.io,direct"
 RUN pwd && go build -o /usr/local/bin
