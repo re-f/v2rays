@@ -2,11 +2,11 @@
 使 cli 的 v2ray 客户端，也能使用订阅的配置，同时用户拥有最大v2ray配置自定义能力
 
 * 使用方式
-*前置条件*
-1. 要求 v2ray 已经安装在 $PATH 路径下
-2. 订阅链接的返回值格式要求：每个 VmssUrls 必须做 base64.StdEncoding,每个 VmssUrls 之间以回车分割。
+- *要求* ： 订阅链接的返回值格式要求：每个 VmssUrls 必须做 base64.StdEncoding,每个 VmssUrls 之间以回车分割。
+- 默认端口是 8888和8889，端口配置在config.json.tmpl 的 inbounds 中
 
 ** 非 容器环境 
+*要求* ：v2ray 必须已经安装在 $PATH 路径下
 查看使用说明：
 #+begin_src bash
 root@ubuntu:/shared/codes/v2rayS# ./v2rayS --help
@@ -32,6 +32,9 @@ Use "v2rayS [command] --help" for more information about a command.
 ** 容器环境
 1. cd docker
 2. V2RAY_SUBSCR_URL="${你的v2ray 订阅地址}" docker-compose up -d
+
+备注：
+默认端口是8888和8889，如果需要修改端口，请在config.json.tmpl 中修改 inbounds部分和 docker/docker-compose.yaml 的 port 部分
 
 * 说明
 v2ray.sh 引用自 [[https://github.com/v2fly/docker][v2fly]]
